@@ -43,10 +43,10 @@ function getRequestData($pdo) {
         $_SESSION['messages'] = $messages;
     } else {
         if (!$name) {
-            $messages['errors'][] = 'Введите Ваше имя!';
+            $messages['errors']['name'] = 'Введите Ваше имя!';
         }
         if (!$text) {
-            $messages['errors'][] = 'Введите Ваш комментарий!';
+            $messages['errors']['text'] = 'Введите Ваш комментарий!';
         }
         $_SESSION['messages'] = $messages;
     }

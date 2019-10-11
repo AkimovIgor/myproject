@@ -107,18 +107,7 @@
                             <div class="card-header"><h3>Комментарии</h3></div>
 
                             <div class="card-body">
-                                <!-- Вывод флеш-сообщения в случае ошибки(-ок) -->
-                                <?php if (isset($errors)): ?>
-                                    <div class="alert alert-danger" role="alert">
-                                        <ul style="margin: 0;">
-                                            <?php foreach ($errors as $error): ?>
-                                                <li>
-                                                    <?= $error ?>
-                                                </li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    </div>
-                                <?php endif; ?>
+                                
                                 <!-- Вывод флеш-сообщения в случае успеха -->
                                 <?php if (isset($success)): ?>
                                     <div class="alert alert-success" role="alert">
@@ -157,10 +146,18 @@
                                     <div class="form-group">
                                     <label for="exampleFormControlTextarea1">Имя</label>
                                     <input name="name" class="form-control" id="exampleFormControlTextarea1" />
+                                    <!-- Вывод флеш-сообщения -->
+                                    <?php if (isset($errors['name'])): ?>
+                                        <span class="text-danger"><?= $errors['name'] ?></span>
+                                    <?php endif; ?>
                                   </div>
                                   <div class="form-group">
                                     <label for="exampleFormControlTextarea2">Сообщение</label>
                                     <textarea name="text" class="form-control" id="exampleFormControlTextarea2" rows="3"></textarea>
+                                    <!-- Вывод флеш-сообщения -->
+                                    <?php if (isset($errors['text'])): ?>
+                                        <span class="text-danger"><?= $errors['text'] ?></span>
+                                    <?php endif; ?>
                                   </div>
                                   <button type="submit" class="btn btn-success">Отправить</button>
                                 </form>
