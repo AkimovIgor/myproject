@@ -1,28 +1,57 @@
 <?php
+    // Подключение файла соединения с БД
+    require_once('db.php');
 
-    // Массив всех комментариев
-    $comments = [
-        // массив данных одного комментария
-        'comment_1' => [
-            'userName' => 'John Doe',
-            'date' => '12/10/2025',
-            'message' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Saepe aspernatur, ullam doloremque deleniti, sequi obcaecati.',
-            'image' => 'no-user.jpg',
-        ],
-        'comment_2' => [
-            'userName' => 'Rahim',
-            'date' => '23/07/2024',
-            'message' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Saepe aspernatur, ullam.',
-            'image' => 'no-user.jpg',
-        ],
-        'comment_3' => [
-            'userName' => 'Igor Akimov',
-            'date' => '11/10/2019',
-            'message' => 'Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
-            'image' => 'no-user.jpg',
-        ],
-    ];
+    // старт сессии
+    session_start();
 
+    // если сессия с флеш-сообщениями не существует
+    if (!isset($_SESSION['messages'])) {
+        $_SESSION['messages'] = []; // создать сессию
+    } else {
+        // если сессия существует, записать значения в соответствующие переменные
+        $errors = $_SESSION['messages']['errors'] ? $_SESSION['messages']['errors'] : null;
+        $success = $_SESSION['messages']['success'] ? $_SESSION['messages']['success'] : null;
+
+        // уничтожить сессию
+        unset($_SESSION['messages']);
+    }
+    
+    /**
+     * Получение всех комментариев из базы
+     *
+     * @param [object] $pdo
+     * @return array
+     */
+    function getAllComments($pdo) {
+        // формируем sql-запрос
+        $sql = "SELECT * FROM comments ORDER BY id DESC";
+        // выполняем sql-запрос
+        $stmt = $pdo->query($sql);
+        // формируем ассоциативный массив полученных данных
+        $row = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // возвращаем массив
+        return $row;
+    }
+
+    /**
+     * Формирование красивой даты для вывода
+     *
+     * @param [string] $date
+     * @return string
+     */
+    function prettyDate($date) {
+        // формирование массива из строки
+        $arr = explode('-', $date);
+        // реверс массива
+        $arr_rev = array_reverse($arr);
+        // формирование строки с датой из массива
+        $date = implode('/', $arr_rev);
+
+        return $date;
+    }
+    // присваиваем переменной результат выполнения функции
+    $comments = getAllComments($pdo);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -78,21 +107,43 @@
                             <div class="card-header"><h3>Комментарии</h3></div>
 
                             <div class="card-body">
-                              <!-- <div class="alert alert-success" role="alert">
-                                Комментарий успешно добавлен
-                              </div> -->
-                                <?php foreach($comments as $comment): ?>
-                                    <div class="media">
-                                    <img src="img/<?= $comment['image'] ?>" class="mr-3" alt="..." width="64" height="64">
-                                    <div class="media-body">
-                                        <h5 class="mt-0"><?= $comment['userName'] ?></h5> 
-                                        <span><small><?= $comment['date'] ?></small></span>
-                                        <p>
-                                            <?= $comment['message'] ?>
-                                        </p>
+                                <!-- Вывод флеш-сообщения в случае ошибки(-ок) -->
+                                <?php if (isset($errors)): ?>
+                                    <div class="alert alert-danger" role="alert">
+                                        <ul style="margin: 0;">
+                                            <?php foreach ($errors as $error): ?>
+                                                <li>
+                                                    <?= $error ?>
+                                                </li>
+                                            <?php endforeach; ?>
+                                        </ul>
                                     </div>
+                                <?php endif; ?>
+                                <!-- Вывод флеш-сообщения в случае успеха -->
+                                <?php if (isset($success)): ?>
+                                    <div class="alert alert-success" role="alert">
+                                        <?= $success ?>
                                     </div>
-                                <?php endforeach; ?>
+                                <?php endif; ?>
+                                <!-- Если таблица с комментарими не пуста -->
+                                <?php if (!empty($comments)): ?>
+                                    <!-- Вывод данных каждого комментария -->
+                                    <?php foreach ($comments as $comment): ?>
+                                        <div class="media">
+                                            <img src="img/<?= $comment['image'] ?>" class="mr-3" alt="..." width="64" height="64">
+                                            <div class="media-body">
+                                                <h5 class="mt-0"><?= $comment['name'] ?></h5> 
+                                                <span><small><?= prettyDate($comment['date']) ?></small></span>
+                                                <p>
+                                                    <?= $comment['text'] ?>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <!-- Если комментарии в таблице отсутствуют -->
+                                <?php else: ?>
+                                    <span>Комментариев пока нет.</span>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -102,14 +153,14 @@
                             <div class="card-header"><h3>Оставить комментарий</h3></div>
 
                             <div class="card-body">
-                                <form action="/store" method="post">
+                                <form action="store.php" method="POST">
                                     <div class="form-group">
                                     <label for="exampleFormControlTextarea1">Имя</label>
                                     <input name="name" class="form-control" id="exampleFormControlTextarea1" />
                                   </div>
                                   <div class="form-group">
-                                    <label for="exampleFormControlTextarea1">Сообщение</label>
-                                    <textarea name="text" class="form-control" id="exampleFormControlTextarea1" rows="3"></textarea>
+                                    <label for="exampleFormControlTextarea2">Сообщение</label>
+                                    <textarea name="text" class="form-control" id="exampleFormControlTextarea2" rows="3"></textarea>
                                   </div>
                                   <button type="submit" class="btn btn-success">Отправить</button>
                                 </form>
