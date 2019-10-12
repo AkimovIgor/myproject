@@ -22,6 +22,8 @@ function userRegister($pdo) {
     $password = trim($_POST['password']);
     $password_confirm = trim($_POST['password_confirmation']);
 
+    $password_hash = password_hash($password, PASSWORD_DEFAULT); // шифрование пароля
+
     $validation = true; // статус валидации
     $messages = [];     // массив для флеш-сообщений
 
@@ -60,7 +62,7 @@ function userRegister($pdo) {
         // связываение параметров
         $stmt->bindParam(':name', $name);
         $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':password', $password);
+        $stmt->bindParam(':password', $password_hash);
 
         // выполнение запроса
         $stmt->execute();
