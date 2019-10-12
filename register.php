@@ -41,6 +41,10 @@ function userRegister($pdo) {
         $validation = false;
         $messages['errors']['email'] = 'Ведите email!';
     }
+    if (strlen($password) < 6 ) {
+        $validation = false;
+        $messages['errors']['password'] = 'Минимальная длина пароля 6 символов';
+    }
     if (empty($password)) {
         $validation = false;
         $messages['errors']['password'] = 'Ведите пароль!';
@@ -49,7 +53,7 @@ function userRegister($pdo) {
         $validation = false;
         $messages['errors']['password_confirm'] = 'Подтвертите пароль!';
     }
-    if ($password != $password_confirm) {
+    if (!empty($password) && !empty($password_confirm) && $password != $password_confirm) {
         $validation = false;
         $messages['errors']['password_equal'] = 'Пароли не совпадают!';
     }
@@ -198,7 +202,7 @@ unset($_SESSION['messages']['errors']);
                                         <label for="password-confirm" class="col-md-4 col-form-label text-md-right">Confirm Password</label>
 
                                         <div class="col-md-6">
-                                            <input id="password-confirm" type="password" class="form-control <?php if (isset($errors['password_confirm'])): ?> @error('password_confirmation') is-invalid @enderror <?php endif; ?>" name="password_confirmation"  autocomplete="new-password">
+                                            <input id="password-confirm" type="password" class="form-control <?php if (isset($errors['password_confirm']) || isset($errors['password_equal'])): ?> @error('password_confirmation') is-invalid @enderror <?php endif; ?>" name="password_confirmation"  autocomplete="new-password">
                                             <?php if (isset($errors['password_confirm'])): ?> 
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong><?= $errors['password_confirm']; ?></strong>
