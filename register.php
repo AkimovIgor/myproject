@@ -17,10 +17,10 @@ function userRegister($pdo) {
         return false;
     }
 
-    $name = trim($_POST['name']);
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
-    $password_confirm = trim($_POST['password_confirmation']);
+    $name = trim(htmlspecialchars($_POST['name']));
+    $email = trim(htmlspecialchars($_POST['email']));
+    $password = trim(htmlspecialchars($_POST['password']));
+    $password_confirm = trim(htmlspecialchars($_POST['password_confirmation']));
 
     $password_hash = password_hash($password, PASSWORD_DEFAULT); // шифрование пароля
 
@@ -31,6 +31,11 @@ function userRegister($pdo) {
     if (empty($name)) {
         $validation = false;
         $messages['errors']['name'] = 'Ведите имя!';
+    }
+    // валидация для корректного ввода email
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $validation = false;
+        $messages['errors']['email'] = 'Введенный вами email не соответствует формату!';
     }
     if (empty($email)) {
         $validation = false;
@@ -161,7 +166,7 @@ unset($_SESSION['messages']['errors']);
                                         <label for="email" class="col-md-4 col-form-label text-md-right">E-Mail Address</label>
 
                                         <div class="col-md-6">
-                                            <input id="email" type="email" class="form-control <?php if (isset($errors['email'])): ?> @error('email') is-invalid @enderror <?php endif; ?>" name="email" >
+                                            <input id="email" type="text" class="form-control <?php if (isset($errors['email'])): ?> @error('email') is-invalid @enderror <?php endif; ?>" name="email" >
                                             <?php if (isset($errors['email'])): ?> 
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong><?= $errors['email']; ?></strong>
