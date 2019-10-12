@@ -4,6 +4,19 @@ require_once('db.php');
 
 session_start();
 
+// если сессия с данными пользователя не существует
+if (!isset($_SESSION['user'])) {
+    // если существуют куки с данными
+    if (isset($_COOKIE['user'])) {
+        $name = $_COOKIE['user']['name'];
+        $email = $_COOKIE['user']['email'];
+    }
+    
+} else {
+    $name = $_SESSION['user']['name'];
+    $email = $_SESSION['user']['email'];
+}
+
 function userLogin($pdo) {
     
     if (empty($_POST)) {
@@ -13,6 +26,9 @@ function userLogin($pdo) {
     // получение данных из полей
     $email = trim(htmlspecialchars($_POST['email']));
     $password = trim(htmlspecialchars($_POST['password']));
+
+    // статус чекбокса "Запомнить меня"
+    $rememberMe = $_POST['remember'];
 
     $validation = true; // статус валидации
     $messages = [];     // массив для флеш-сообщений
@@ -56,14 +72,26 @@ function userLogin($pdo) {
 
         $password_unhash = password_verify($password, $row['password']); // дешифрование пароля
         
+        // если пользователь существует в базе данных
         if ($row['email'] && $password_unhash) {
             // добавление флеш-сообщения
             $messages['success'] = 'Вход успешно выполнен!';
             
-            $userData['email'] = $email;
-            $userData['password'] = $password;
+            // стоит галочка "Запомнить меня"
+            if ($rememberMe) {
+                setcookie('user[name]', $row['name'], time() + 60 * 2);
+                setcookie('user[email]', $email, time() + 60 * 2);
+                setcookie('user[password]', $password, time() + 60 * 2);
+            } else {
+                // создаем массив данных пользователя
+                $userData['name'] = $row['name'];
+                $userData['email'] = $row['email'];
+                $userData['password'] = $row['password'];
+            }
 
+            // создаем сессию для хранения данных пользователя
             $_SESSION['user'] = $userData;
+
             // редирект на главную
             header('Location: /');
         } else {
@@ -84,8 +112,14 @@ userLogin($pdo);
 
 // переменная для вывода мини-сообщений под полями
 $errors = $_SESSION['messages']['errors'];
+
 // переменная для автозаполнения полей
-$fieldData = $_SESSION['fieldData'];
+if (isset($_COOKIE['user'])) {
+    $fieldData = $_COOKIE['user'];
+} else {
+    $fieldData = $_SESSION['fieldData'];
+}
+
 // данные пользователя
 $user =  $_SESSION['user'];
 // уничтожение сессий
@@ -112,7 +146,7 @@ unset($_SESSION['fieldData']);
     <div id="app">
         <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
             <div class="container">
-                <a class="navbar-brand" href="index.html">
+                <a class="navbar-brand" href="/">
                     Project
                 </a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -128,12 +162,24 @@ unset($_SESSION['fieldData']);
                     <!-- Right Side Of Navbar -->
                     <ul class="navbar-nav ml-auto">
                         <!-- Authentication Links -->
+                        <?php if (isset($name)): ?>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <?= $name ?>
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                                <a class="dropdown-item" href="profile.php">Профиль</a>
+                                <a class="dropdown-item" href="logout.php">Выход</a>
+                            </div>
+                        </li>
+                        <?php else: ?>
                             <li class="nav-item">
                                 <a class="nav-link" href="login.php">Login</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="register.php">Register</a>
                             </li>
+                        <?php endif; ?>
                     </ul>
                 </div>
             </div>
@@ -153,7 +199,7 @@ unset($_SESSION['fieldData']);
                                         <label for="email" class="col-md-4 col-form-label text-md-right">E-Mail Address</label>
 
                                         <div class="col-md-6">
-                                            <input id="email" type="email" class="form-control <?php if (isset($errors['email'])): ?>is-invalid <?php endif; ?>" name="email"  autocomplete="email" autofocus value="<?= $fieldData['email'] ?>">
+                                            <input id="email" type="email" class="form-control <?php if (isset($errors['email'])): ?>is-invalid <?php endif; ?>" name="email"  autocomplete="email" autofocus value="<?= $fieldData['email']; ?>">
                                             <?php if (isset($errors['email'])): ?> 
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong><?= $errors['email']; ?></strong>
@@ -166,7 +212,7 @@ unset($_SESSION['fieldData']);
                                         <label for="password" class="col-md-4 col-form-label text-md-right">Password</label>
 
                                         <div class="col-md-6">
-                                            <input id="password" type="password" class="form-control <?php if (isset($errors['password'])): ?> is-invalid <?php endif; ?>" name="password"  autocomplete="current-password" value="<?= $fieldData['password'] ?>">
+                                            <input id="password" type="password" class="form-control <?php if (isset($errors['password'])): ?> is-invalid <?php endif; ?>" name="password"  autocomplete="current-password" value="<?= $fieldData['password']; ?>">
                                             <?php if (isset($errors['password'])): ?> 
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong><?= $errors['password']; ?></strong>

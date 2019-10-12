@@ -16,6 +16,18 @@
         // уничтожить сессию
         unset($_SESSION['messages']);
     }
+
+    // если сессия с данными пользователя не существует
+    if (!isset($_SESSION['user'])) {
+        // если существуют куки с данными
+        if (isset($_COOKIE['user'])) {
+            $name = $_COOKIE['user']['name'];
+            $email = $_COOKIE['user']['email'];
+        }
+    } else {
+        $name = $_SESSION['user']['name'];
+        $email = $_SESSION['user']['email'];
+    }
     
     /**
      * Получение всех комментариев из базы
@@ -67,12 +79,15 @@
 
     <!-- Styles -->
     <link href="css/app.css" rel="stylesheet">
+    <!-- Scripts -->
+    <script src="markup/js/jquery.min.js" defer></script>
+    <script src="markup/js/bootstrap.js" defer></script>
 </head>
 <body>
     <div id="app">
         <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
             <div class="container">
-                <a class="navbar-brand" href="index.html">
+                <a class="navbar-brand" href="/">
                     Project
                 </a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,12 +103,24 @@
                     <!-- Right Side Of Navbar -->
                     <ul class="navbar-nav ml-auto">
                         <!-- Authentication Links -->
-                        <li class="nav-item">
-                            <a class="nav-link" href="login.php">Login</a>
+                        <?php if (isset($name)): ?>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <?= $name ?>
+                            </a>
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                                <a class="dropdown-item" href="profile.php">Профиль</a>
+                                <a class="dropdown-item" href="logout.php">Выход</a>
+                            </div>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="register.php">Register</a>
-                        </li>
+                        <?php else: ?>
+                            <li class="nav-item">
+                                <a class="nav-link" href="login.php">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="register.php">Register</a>
+                            </li>
+                        <?php endif; ?>
                     </ul>
                 </div>
             </div>
@@ -143,14 +170,21 @@
 
                             <div class="card-body">
                                 <form action="store.php" method="POST">
-                                    <div class="form-group">
-                                    <label for="exampleFormControlTextarea1">Имя</label>
-                                    <input name="name" class="form-control" id="exampleFormControlTextarea1" />
-                                    <!-- Вывод флеш-сообщения -->
-                                    <?php if (isset($errors['name'])): ?>
-                                        <span class="text-danger"><?= $errors['name'] ?></span>
+                                    <?php if (isset($name)): ?>
+                                        <div class="form-group">
+                                            <input type="hidden" name="name" class="form-control" value="<?= $name ?>"/>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="form-group">
+                                            <label for="exampleFormControlTextarea1">Имя</label>
+                                            <input name="name" class="form-control" id="exampleFormControlTextarea1" />
+                                            <!-- Вывод флеш-сообщения -->
+                                            <?php if (isset($errors['name'])): ?>
+                                                <span class="text-danger"><?= $errors['name'] ?></span>
+                                            <?php endif; ?>
+                                        </div>
                                     <?php endif; ?>
-                                  </div>
+                                    
                                   <div class="form-group">
                                     <label for="exampleFormControlTextarea2">Сообщение</label>
                                     <textarea name="text" class="form-control" id="exampleFormControlTextarea2" rows="3"></textarea>
