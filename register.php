@@ -32,6 +32,12 @@ function userRegister($pdo) {
         $validation = false;
         $messages['errors']['name'] = 'Ведите имя!';
     }
+    // валидация на уже существующий email
+    $email_exist = checkEmail($pdo, $email);
+    if ($email_exist) {
+        $validation = false;
+        $messages['errors']['email'] = 'Введенный вами email уже существует!';
+    }
     // валидация для корректного ввода email
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $validation = false;
@@ -88,6 +94,28 @@ function userRegister($pdo) {
         $_SESSION['messages'] = $messages;
     }
 }
+
+/**
+ * Проверка уже существующего email в базе
+ *
+ * @param [object] $pdo
+ * @param [string] $email
+ * @return boolean
+ */
+function checkEmail($pdo, $email) {
+    // Выбор всех полей email в базе
+    $sql = "SELECT email FROM users";
+    // выполнение запроса
+    $stmt = $pdo->query($sql);
+
+    // проверка соответствия введенного email с другими
+    while ($row = $stmt->fetch()) {
+        if ($row['email'] == $email) return true;
+    }
+
+    return false;
+}
+
 // вызов функции регистрации
 userRegister($pdo);
 
