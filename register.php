@@ -13,6 +13,7 @@ session_start();
  */
 function userRegister($pdo) {
 
+    //var_dump($_SESSION['messages']);//die;
     if (empty($_POST)) {
         return false;
     }
@@ -26,6 +27,10 @@ function userRegister($pdo) {
 
     $validation = true; // статус валидации
     $messages = [];     // массив для флеш-сообщений
+
+    $_SESSION['fieldData']['name'] = $name;
+    $_SESSION['fieldData']['email'] = $email;
+    $_SESSION['fieldData']['password'] = $password;
 
     // правила валидации полей формы и добавление сообщений для вывода под полями
     if (empty($name)) {
@@ -45,7 +50,7 @@ function userRegister($pdo) {
     }
     if (empty($email)) {
         $validation = false;
-        $messages['errors']['email'] = 'Ведите email!';
+        $messages['errors']['email'] = 'Введите email!';
     }
     if (strlen($password) < 6 ) {
         $validation = false;
@@ -53,7 +58,7 @@ function userRegister($pdo) {
     }
     if (empty($password)) {
         $validation = false;
-        $messages['errors']['password'] = 'Ведите пароль!';
+        $messages['errors']['password'] = 'Введите пароль!';
     }
     if (empty($password_confirm)) {
         $validation = false;
@@ -122,8 +127,12 @@ userRegister($pdo);
 // переменная для вывода мини-сообщений под полями
 $errors = $_SESSION['messages']['errors'];
 
-// уничтожение сессии
+// переменная для автозаполнения полей
+$fieldData = $_SESSION['fieldData'];
+
+// уничтожение сессий
 unset($_SESSION['messages']['errors']);
+unset($_SESSION['fieldData']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -185,7 +194,7 @@ unset($_SESSION['messages']['errors']);
                                         <label for="name" class="col-md-4 col-form-label text-md-right">Name</label>
 
                                         <div class="col-md-6">
-                                            <input id="name" type="text" class="form-control <?php if (isset($errors['name'])): ?> @error('name') is-invalid @enderror <?php endif; ?>" name="name" autofocus>
+                                            <input id="name" type="text" class="form-control <?php if (isset($errors['name'])): ?> @error('name') is-invalid @enderror <?php endif; ?>" name="name" autofocus value="<?= $fieldData['name'] ?>">
                                                 <?php if (isset($errors['name'])): ?> 
                                                     <span class="invalid-feedback" role="alert">
                                                         <strong><?= $errors['name']; ?></strong>
@@ -198,7 +207,7 @@ unset($_SESSION['messages']['errors']);
                                         <label for="email" class="col-md-4 col-form-label text-md-right">E-Mail Address</label>
 
                                         <div class="col-md-6">
-                                            <input id="email" type="text" class="form-control <?php if (isset($errors['email'])): ?> @error('email') is-invalid @enderror <?php endif; ?>" name="email" >
+                                            <input id="email" type="text" class="form-control <?php if (isset($errors['email'])): ?> @error('email') is-invalid @enderror <?php endif; ?>" name="email" value="<?= $fieldData['email'] ?>">
                                             <?php if (isset($errors['email'])): ?> 
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong><?= $errors['email']; ?></strong>
@@ -211,7 +220,7 @@ unset($_SESSION['messages']['errors']);
                                         <label for="password" class="col-md-4 col-form-label text-md-right">Password</label>
 
                                         <div class="col-md-6">
-                                            <input id="password" type="password" class="form-control <?php if (isset($errors['password']) || isset($errors['password_equal'])): ?> @error('password') is-invalid @enderror <?php endif; ?>" name="password"  autocomplete="new-password">
+                                            <input id="password" type="password" class="form-control <?php if (isset($errors['password']) || isset($errors['password_equal'])): ?> @error('password') is-invalid @enderror <?php endif; ?>" name="password"  autocomplete="new-password" value="<?= $fieldData['password'] ?>">
                                             <?php if (isset($errors['password'])): ?> 
                                                 <span class="invalid-feedback" role="alert">
                                                     <strong><?= $errors['password']; ?></strong>
