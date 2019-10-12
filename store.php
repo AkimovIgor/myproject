@@ -12,7 +12,7 @@ session_start();
  * @return void
  */
 function getRequestData($pdo) {
-    $name = $_POST['name'] ? trim(htmlspecialchars($_POST['name'])) : null; // получение имени комментатора
+    $userId = $_POST['id'] ? $_POST['id'] : null;                           // получение ID комментатора
     $text = $_POST['text'] ? trim(htmlspecialchars($_POST['text'])) : null; // получение текста комментария
     $date = date('Y-m-d');                                                  // устаковка даты добавления нового комментария
     $image = 'no-user.jpg';                                                 // изображение комментатора (заглушка)
@@ -20,17 +20,16 @@ function getRequestData($pdo) {
     $messages = []; // массив для хранения флеш-сообщений
 
     // если все поля были успешно заполнены
-    if ($name && $text) {
+    if ($userId && $text) {
         // формируем sql-запрос в базу данных
         $sql = "INSERT INTO comments 
-                (name, text, date, image) 
-                VALUES (:name, :text, '$date', '$image')";
+                (text, date, image, user_id) 
+                VALUES (:text, '$date', '$image', $userId)";
 
         // подготавливаем запрос перед выполнением (для защиты от sql-инъекций)
         $stmt = $pdo->prepare($sql);
 
         // связываем подготовленные данные
-        $stmt->bindParam(':name', $name);
         $stmt->bindParam(':text', $text);
 
         // выполнение запроса
@@ -42,9 +41,6 @@ function getRequestData($pdo) {
         // добавление в сессию массива с флещ-сообщениями для вывода
         $_SESSION['messages'] = $messages;
     } else {
-        if (!$name) {
-            $messages['errors']['name'] = 'Введите Ваше имя!';
-        }
         if (!$text) {
             $messages['errors']['text'] = 'Введите Ваш комментарий!';
         }

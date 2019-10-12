@@ -37,7 +37,11 @@
      */
     function getAllComments($pdo) {
         // формируем sql-запрос
-        $sql = "SELECT * FROM comments ORDER BY id DESC";
+        $sql = "SELECT cs.*, us.name 
+                FROM comments AS cs 
+                LEFT JOIN users AS us 
+                ON cs.user_id = us.id 
+                ORDER BY cs.id DESC";
         // выполняем sql-запрос
         $stmt = $pdo->query($sql);
         // формируем ассоциативный массив полученных данных
@@ -62,8 +66,22 @@
 
         return $date;
     }
+
+    function checkUser($pdo, $email) {
+        $sql = "SELECT id 
+                FROM users 
+                WHERE email = '$email' 
+                LIMIT 1";
+
+        $stmt = $pdo->query($sql);
+        $row = $stmt->fetch();
+        return $row['id'];
+    }
     // присваиваем переменной результат выполнения функции
     $comments = getAllComments($pdo);
+
+    $userId = checkUser($pdo, $email);
+    
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -165,38 +183,32 @@
                     </div>
                 
                     <div class="col-md-12" style="margin-top: 20px;">
+                        <?php if (isset($name)): ?>
                         <div class="card">
                             <div class="card-header"><h3>Оставить комментарий</h3></div>
-
+                            
                             <div class="card-body">
                                 <form action="store.php" method="POST">
-                                    <?php if (isset($name)): ?>
-                                        <div class="form-group">
-                                            <input type="hidden" name="name" class="form-control" value="<?= $name ?>"/>
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="form-group">
-                                            <label for="exampleFormControlTextarea1">Имя</label>
-                                            <input name="name" class="form-control" id="exampleFormControlTextarea1" />
-                                            <!-- Вывод флеш-сообщения -->
-                                            <?php if (isset($errors['name'])): ?>
-                                                <span class="text-danger"><?= $errors['name'] ?></span>
-                                            <?php endif; ?>
-                                        </div>
-                                    <?php endif; ?>
-                                    
-                                  <div class="form-group">
-                                    <label for="exampleFormControlTextarea2">Сообщение</label>
-                                    <textarea name="text" class="form-control" id="exampleFormControlTextarea2" rows="3"></textarea>
-                                    <!-- Вывод флеш-сообщения -->
-                                    <?php if (isset($errors['text'])): ?>
-                                        <span class="text-danger"><?= $errors['text'] ?></span>
-                                    <?php endif; ?>
-                                  </div>
+                                    <div class="form-group">
+                                        <input type="hidden" name="id" class="form-control" value="<?= $userId ?>"/>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="exampleFormControlTextarea2">Сообщение</label>
+                                        <textarea name="text" class="form-control" id="exampleFormControlTextarea2" rows="3"></textarea>
+                                        <!-- Вывод флеш-сообщения -->
+                                        <?php if (isset($errors['text'])): ?>
+                                            <span class="text-danger"><?= $errors['text'] ?></span>
+                                        <?php endif; ?>
+                                    </div>
                                   <button type="submit" class="btn btn-success">Отправить</button>
                                 </form>
                             </div>
                         </div>
+                        <?php else: ?>
+                            <div class="alert alert-info" role="alert">
+                                Чтобы оставить комментарий <a href="login.php" class="alert-link">авторизуйтесь</a>.
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
