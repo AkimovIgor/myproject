@@ -1,86 +1,101 @@
 <?php
-    // Подключение файла соединения с БД
-    require_once('db.php');
+// Подключение файла соединения с БД
+require_once('db.php');
 
-    // старт сессии
-    session_start();
+// старт сессии
+session_start();
 
-    // если сессия с флеш-сообщениями не существует
-    if (!isset($_SESSION['messages'])) {
-        $_SESSION['messages'] = []; // создать сессию
-    } else {
-        // если сессия существует, записать значения в соответствующие переменные
-        $errors = $_SESSION['messages']['errors'] ? $_SESSION['messages']['errors'] : null;
-        $success = $_SESSION['messages']['success'] ? $_SESSION['messages']['success'] : null;
+// если сессия с флеш-сообщениями не существует
+if (!isset($_SESSION['messages'])) {
+    $_SESSION['messages'] = []; // создать сессию
+} else {
+    // если сессия существует, записать значения в соответствующие переменные
+    $errors = $_SESSION['messages']['errors'] ? $_SESSION['messages']['errors'] : null;
+    $success = $_SESSION['messages']['success'] ? $_SESSION['messages']['success'] : null;
 
-        // уничтожить сессию
-        unset($_SESSION['messages']);
-    }
+    // уничтожить сессию
+    unset($_SESSION['messages']);
+}
 
-    // если сессия с данными пользователя не существует
-    if (!isset($_SESSION['user'])) {
-        // если существуют куки с данными
-        if (isset($_COOKIE['user'])) {
-            $name = $_COOKIE['user']['name'];
-            $email = $_COOKIE['user']['email'];
-        }
-    } else {
-        $name = $_SESSION['user']['name'];
-        $email = $_SESSION['user']['email'];
+// если сессия с данными пользователя не существует
+if (!isset($_SESSION['user'])) {
+    // если существуют куки с данными
+    if (isset($_COOKIE['user'])) {
+        $isLogin = $_COOKIE['user']['is_login'];
+        $name = $_COOKIE['user']['name'];
+        $email = $_COOKIE['user']['email'];
     }
     
-    /**
-     * Получение всех комментариев из базы
-     *
-     * @param [object] $pdo
-     * @return array
-     */
-    function getAllComments($pdo) {
-        // формируем sql-запрос
-        $sql = "SELECT cs.*, us.name 
-                FROM comments AS cs 
-                LEFT JOIN users AS us 
-                ON cs.user_id = us.id 
-                ORDER BY cs.id DESC";
-        // выполняем sql-запрос
-        $stmt = $pdo->query($sql);
-        // формируем ассоциативный массив полученных данных
-        $row = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        // возвращаем массив
-        return $row;
-    }
+} else {
+    // если же сессия с данными пользователя существует
+    $isLogin = $_SESSION['user']['is_login'];
+    $name = $_SESSION['user']['name'];
+    $email = $_SESSION['user']['email'];
+}
 
-    /**
-     * Формирование красивой даты для вывода
-     *
-     * @param [string] $date
-     * @return string
-     */
-    function prettyDate($date) {
-        // формирование массива из строки
-        $arr = explode('-', $date);
-        // реверс массива
-        $arr_rev = array_reverse($arr);
-        // формирование строки с датой из массива
-        $date = implode('/', $arr_rev);
+/**
+ * Получение всех комментариев из базы
+ *
+ * @param [object] $pdo
+ * @return array
+ */
+function getAllComments($pdo) {
+    // формируем sql-запрос
+    $sql = "SELECT cs.*, us.name 
+            FROM comments AS cs 
+            LEFT JOIN users AS us 
+            ON cs.user_id = us.id 
+            ORDER BY cs.id DESC";
+    // выполняем sql-запрос
+    $stmt = $pdo->query($sql);
+    // формируем ассоциативный массив полученных данных
+    $row = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // возвращаем массив
+    return $row;
+}
 
-        return $date;
-    }
+/**
+ * Формирование красивой даты для вывода
+ *
+ * @param [string] $date
+ * @return string
+ */
+function prettyDate($date) {
+    // формирование массива из строки
+    $arr = explode('-', $date);
+    // реверс массива
+    $arr_rev = array_reverse($arr);
+    // формирование строки с датой из массива
+    $date = implode('/', $arr_rev);
 
-    function checkUser($pdo, $email) {
-        $sql = "SELECT id 
-                FROM users 
-                WHERE email = '$email' 
-                LIMIT 1";
+    return $date;
+}
 
-        $stmt = $pdo->query($sql);
-        $row = $stmt->fetch();
-        return $row['id'];
-    }
-    // присваиваем переменной результат выполнения функции
-    $comments = getAllComments($pdo);
+/**
+ * Получение ID текущего пользователя
+ *
+ * @param [object] $pdo
+ * @param [string] $email
+ * @return integer
+ */
+function checkUser($pdo, $email) {
+    // выбираем ID пользователя с текущим email
+    $sql = "SELECT id 
+            FROM users 
+            WHERE email = '$email' 
+            LIMIT 1";
 
-    $userId = checkUser($pdo, $email);
+    $stmt = $pdo->query($sql);
+    
+    $row = $stmt->fetch();
+    // возвращаем ID
+    return $row['id'];
+}
+// присваиваем переменной результат выполнения функции
+$comments = getAllComments($pdo);
+
+// получение ID текущего пользователя
+$userId = checkUser($pdo, $email);
     
 ?>
 <!DOCTYPE html>
@@ -121,7 +136,7 @@
                     <!-- Right Side Of Navbar -->
                     <ul class="navbar-nav ml-auto">
                         <!-- Authentication Links -->
-                        <?php if (isset($name)): ?>
+                        <?php if (isset($isLogin)): ?>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <?= $name ?>
@@ -183,7 +198,7 @@
                     </div>
                 
                     <div class="col-md-12" style="margin-top: 20px;">
-                        <?php if (isset($name)): ?>
+                        <?php if (isset($isLogin)): ?>
                         <div class="card">
                             <div class="card-header"><h3>Оставить комментарий</h3></div>
                             

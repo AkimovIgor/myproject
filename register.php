@@ -9,11 +9,13 @@ session_start();
 if (!isset($_SESSION['user'])) {
     // если существуют куки с данными
     if (isset($_COOKIE['user'])) {
+        $isLogin = $_COOKIE['user']['is_login'];
         $name = $_COOKIE['user']['name'];
         $email = $_COOKIE['user']['email'];
     }
     
 } else {
+    $isLogin = $_SESSION['user']['is_login'];
     $name = $_SESSION['user']['name'];
     $email = $_SESSION['user']['email'];
 }
@@ -108,6 +110,7 @@ function userRegister($pdo) {
         $userData['name'] = $name;
         $userData['email'] = $email;
         $userData['password'] = $password;
+        $userData['is_login'] = true;
 
         // создаем сессию для хранения данных пользователя
         $_SESSION['user'] = $userData;
@@ -172,7 +175,8 @@ unset($_SESSION['fieldData']);
     <link href="css/app.css" rel="stylesheet">
 
     <!-- Scripts -->
-    <script src="js/bootstrap.js"></script>
+    <script src="markup/js/jquery.min.js" defer></script>
+    <script src="markup/js/bootstrap.js" defer></script>
 </head>
 <body>
     <div id="app">
@@ -194,7 +198,7 @@ unset($_SESSION['fieldData']);
                     <!-- Right Side Of Navbar -->
                     <ul class="navbar-nav ml-auto">
                         <!-- Authentication Links -->
-                        <?php if (isset($name)): ?>
+                        <?php if (isset($isLogin)): ?>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <?= $name ?>

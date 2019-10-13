@@ -8,11 +8,13 @@ session_start();
 if (!isset($_SESSION['user'])) {
     // если существуют куки с данными
     if (isset($_COOKIE['user'])) {
+        $isLogin = $_COOKIE['user']['is_login'];
         $name = $_COOKIE['user']['name'];
         $email = $_COOKIE['user']['email'];
     }
     
 } else {
+    $isLogin = $_SESSION['user']['is_login'];
     $name = $_SESSION['user']['name'];
     $email = $_SESSION['user']['email'];
 }
@@ -82,11 +84,13 @@ function userLogin($pdo) {
                 setcookie('user[name]', $row['name'], time() + 60 * 2);
                 setcookie('user[email]', $email, time() + 60 * 2);
                 setcookie('user[password]', $password, time() + 60 * 2);
+                setcookie('user[is_login]', true, time() + 60 * 2);
             } else {
                 // создаем массив данных пользователя
                 $userData['name'] = $row['name'];
                 $userData['email'] = $row['email'];
                 $userData['password'] = $row['password'];
+                $userData['is_login'] = true;
             }
 
             // создаем сессию для хранения данных пользователя
@@ -141,6 +145,10 @@ unset($_SESSION['fieldData']);
 
     <!-- Styles -->
     <link href="css/app.css" rel="stylesheet">
+
+    <!-- Scripts -->
+    <script src="markup/js/jquery.min.js" defer></script>
+    <script src="markup/js/bootstrap.js" defer></script>
 </head>
 <body>
     <div id="app">
@@ -162,7 +170,7 @@ unset($_SESSION['fieldData']);
                     <!-- Right Side Of Navbar -->
                     <ul class="navbar-nav ml-auto">
                         <!-- Authentication Links -->
-                        <?php if (isset($name)): ?>
+                        <?php if (isset($isLogin)): ?>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <?= $name ?>
