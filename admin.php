@@ -1,9 +1,24 @@
 <?php
+
 // Подключение файла соединения с БД
 require_once('db.php');
 
 // старт сессии
 session_start();
+
+// осуществление доступа админке
+if (!isset($_SESSION['user']['is_login']) && !isset($_COOKIE['user']['is_login'])) {
+    header('Location: /'); // редирект на главную
+    exit;
+}
+if (!isset($_COOKIE['user']['is_login']) && isset($_SESSION['user']['is_login']) && $_SESSION['user']['name'] != 'admin') {
+    header('Location: /'); // редирект на главную
+    exit;
+}
+if (!isset($_SESSION['user']['is_login']) && isset($_COOKIE['user']['is_login']) && $_COOKIE['user']['name'] != 'admin') {
+    header('Location: /'); // редирект на главную
+    exit;
+}
 
 // если сессия с флеш-сообщениями не существует
 if (!isset($_SESSION['messages'])) {
@@ -25,7 +40,6 @@ if (!isset($_SESSION['user'])) {
         $name = $_COOKIE['user']['name'];
         $email = $_COOKIE['user']['email'];
     }
-    
 } else {
     // если же сессия с данными пользователя существует
     $isLogin = $_SESSION['user']['is_login'];
@@ -45,7 +59,6 @@ function getAllComments($pdo) {
             FROM comments AS cs 
             LEFT JOIN users AS us 
             ON cs.user_id = us.id 
-            WHERE status = 1 
             ORDER BY cs.id DESC";
     // выполняем sql-запрос
     $stmt = $pdo->query($sql);
@@ -72,32 +85,9 @@ function prettyDate($date) {
     return $date;
 }
 
-/**
- * Получение ID текущего пользователя
- *
- * @param [object] $pdo
- * @param [string] $email
- * @return integer
- */
-function checkUser($pdo, $email) {
-    // выбираем ID пользователя с текущим email
-    $sql = "SELECT id 
-            FROM users 
-            WHERE email = '$email' 
-            LIMIT 1";
-
-    $stmt = $pdo->query($sql);
-    
-    $row = $stmt->fetch();
-    // возвращаем ID
-    return $row['id'];
-}
-// присваиваем переменной результат выполнения функции
+// получение массива комментариев
 $comments = getAllComments($pdo);
 
-// получение ID текущего пользователя
-$userId = checkUser($pdo, $email);
-    
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -113,6 +103,7 @@ $userId = checkUser($pdo, $email);
 
     <!-- Styles -->
     <link href="css/app.css" rel="stylesheet">
+
     <!-- Scripts -->
     <script src="markup/js/jquery.min.js" defer></script>
     <script src="markup/js/bootstrap.js" defer></script>
@@ -164,67 +155,62 @@ $userId = checkUser($pdo, $email);
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-md-12">
+                        <?php if (isset($errors['status'])): ?>
+                            <div class="alert alert-danger" role="alert">
+                                <?= $errors['status'] ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (isset($success)): ?>
+                            <div class="alert alert-success" role="alert">
+                                <?= $success ?>
+                            </div>
+                        <?php endif; ?>
+
                         <div class="card">
-                            <div class="card-header"><h3>Комментарии</h3></div>
+                            <div class="card-header"><h3>Админ панель</h3></div>
 
                             <div class="card-body">
-                                
-                                <!-- Вывод флеш-сообщения в случае успеха -->
-                                <?php if (isset($success)): ?>
-                                    <div class="alert alert-success" role="alert">
-                                        <?= $success ?>
-                                    </div>
-                                <?php endif; ?>
-                                <!-- Если таблица с комментарими не пуста -->
                                 <?php if (!empty($comments)): ?>
-                                    <!-- Вывод данных каждого комментария -->
-                                    <?php foreach ($comments as $comment): ?>
-                                        <div class="media">
-                                            <img src="<?= ($comment['image'] == 'no-user.jpg') ? 'img/' . $comment['image'] : 'uploads/' . $comment['image']?>" class="mr-3" alt="..." width="64" height="64">
-                                            <div class="media-body">
-                                                <h5 class="mt-0"><?= $comment['name'] ?></h5> 
-                                                <span><small><?= prettyDate($comment['date']) ?></small></span>
-                                                <p>
-                                                    <?= $comment['text'] ?>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Аватар</th>
+                                            <th>Имя</th>
+                                            <th>Дата</th>
+                                            <th>Комментарий</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        <?php foreach ($comments as $comment): ?>
+                                            <tr>
+                                                <td>
+                                                    <img src="<?= ($comment['image'] == 'no-user.jpg') ? 'img/' . $comment['image'] : 'uploads/' . $comment['image']?>" alt="" class="img-fluid" width="64" height="64">
+                                                </td>
+                                                <td><?= $comment['name'] ?></td>
+                                                <td><?= prettyDate($comment['date']) ?></td>
+                                                <td><?= $comment['text'] ?></td>
+                                                <td>
+                                                    <?php if ($comment['status']): ?>
+                                                        <a href="update.php/?id=<?= $comment['id'] ?>" class="btn btn-warning">Запретить</a>
+                                                    <?php else: ?>
+                                                        <a href="update.php/?id=<?= $comment['id'] ?>" class="btn btn-success">Разрешить</a>
+                                                    <?php endif; ?>
+                                            
+                                                    <a href="delete.php/?id=<?= $comment['id'] ?>" onclick="return confirm('Вы действительно хотите удалить запись?')" class="btn btn-danger">Удалить</a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
                                 <!-- Если комментарии в таблице отсутствуют -->
                                 <?php else: ?>
                                     <span>Комментариев пока нет.</span>
                                 <?php endif; ?>
                             </div>
                         </div>
-                    </div>
-                
-                    <div class="col-md-12" style="margin-top: 20px;">
-                        <?php if (isset($isLogin)): ?>
-                        <div class="card">
-                            <div class="card-header"><h3>Оставить комментарий</h3></div>
-                            
-                            <div class="card-body">
-                                <form action="store.php" method="POST">
-                                    <div class="form-group">
-                                        <input type="hidden" name="id" class="form-control" value="<?= $userId ?>"/>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="exampleFormControlTextarea2">Сообщение</label>
-                                        <textarea name="text" class="form-control" id="exampleFormControlTextarea2" rows="3"></textarea>
-                                        <!-- Вывод флеш-сообщения -->
-                                        <?php if (isset($errors['text'])): ?>
-                                            <span class="text-danger"><?= $errors['text'] ?></span>
-                                        <?php endif; ?>
-                                    </div>
-                                  <button type="submit" class="btn btn-success">Отправить</button>
-                                </form>
-                            </div>
-                        </div>
-                        <?php else: ?>
-                            <div class="alert alert-info" role="alert">
-                                Чтобы оставить комментарий <a href="login.php" class="alert-link">авторизуйтесь</a>.
-                            </div>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
