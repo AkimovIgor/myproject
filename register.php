@@ -60,7 +60,7 @@ function userRegister($pdo) {
         $messages['errors']['email'] = 'Введенный вами email уже существует!';
     }
     // валидация для корректного ввода email
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if (!preg_match("/^(?:[a-z0-9]+(?:[-_.]?[a-z0-9]+)?@[a-z0-9_.-]+(?:\.?[a-z0-9]+)?\.[a-z]{2,5})$/i", $email)) {
         $validation = false;
         $messages['errors']['email'] = 'Введенный вами email не соответствует формату!';
     }

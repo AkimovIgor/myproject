@@ -22,7 +22,7 @@ if (!isset($_SESSION['messages'])) {
     // уничтожить сессию
     unset($_SESSION['messages']);
 }
-
+//var_dump($_SESSION['messages']); die;
 // если сессия с данными пользователя не существует
 if (!isset($_SESSION['user'])) {
     // если существуют куки с данными
@@ -64,38 +64,59 @@ function changeProfile($pdo, $email, $user) {
     $name = trim(htmlspecialchars($_POST['name']));
     $email = trim(htmlspecialchars($_POST['email']));
 
+    $validation = true; // статус валидации
+    $messages = [];     // массив для флеш-сообщений
+
     // получение массива данных картинки
     $file = $_FILES['image'];
-
+    
     // если картинка выбрана из поля
     if (!empty($file['name'])) {
 
         // каталог для загружаемых файлов
         $uploadDir = __DIR__ . '/uploads/';
 
+        // доступные форматы загружаемых файлов
+        $availableFormats = ['jpg', 'jpeg', 'png', 'gif'];
+
+        // получение формата загружаемого файла
+        $format = mb_substr($file['name'], mb_strripos($file['name'], '.') + 1);
+
         // формируем имя файла
-        $fileName = uniqid() . basename($file['name']);
+        $fileName = uniqid() . '.' . $format;
 
         // полный путь к месту назначения (папка uploads)
         $uploadFile = $uploadDir . $fileName;
         
-        // если такая картинка уже существует
-        if(file_exists($uploadDir . $user['image'])) {
-            // удалить старую картинку
-            unlink($uploadDir . $user['image']);
-            // загрузить новую картинку
-            move_uploaded_file($file['tmp_name'], $uploadFile);
-        } else {
-            // просто загрузить картинку
-            move_uploaded_file($file['tmp_name'], $uploadFile);
+        // валидация формата
+        for($i = 0; $i < count($availableFormats); $i++) {
+            if ($format == $availableFormats[$i]) {
+                $isAvailable = true;
+                break;
+            } 
         }
+
+        // если формат недоступен
+        if (!$isAvailable) {
+            $validation = false;
+            $messages['errors']['format'] = 'Недопустимый формат файла! Допустимые форматы: ' . implode(', ', $availableFormats);
+        } else {
+            // если такая картинка уже существует
+            if(file_exists($uploadDir . $user['image'])) {
+                // удалить старую картинку
+                unlink($uploadDir . $user['image']);
+                // загрузить новую картинку
+                move_uploaded_file($file['tmp_name'], $uploadFile);
+            } else {
+                // просто загрузить картинку
+                move_uploaded_file($file['tmp_name'], $uploadFile);
+            }
+        }
+
     } else {
         // если картинка не выбрана
         $fileName = null;
     }
-
-    $validation = true; // статус валидации
-    $messages = [];     // массив для флеш-сообщений
 
     // правила валидации полей формы и добавление сообщений для вывода под полями
     if (empty($name)) {
@@ -109,7 +130,7 @@ function changeProfile($pdo, $email, $user) {
         $messages['errors']['email'] = 'Введенный вами email уже существует!';
     }
     // валидация для корректного ввода email
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if (!preg_match("/^(?:[a-z0-9]+(?:[-_.]?[a-z0-9]+)?@[a-z0-9_.-]+(?:\.?[a-z0-9]+)?\.[a-z]{2,5})$/i", $email)) {
         $validation = false;
         $messages['errors']['email'] = 'Введенный вами email не соответствует формату!';
     }
@@ -166,11 +187,9 @@ function changeProfile($pdo, $email, $user) {
         
         // добавление флеш-сообщения
         $messages['success'] = 'Изменения сохранены!';
-
-        // редирект на текущую страницу
-        header('Location: profile.php');
     }
-    
+    // редирект на текущую страницу
+    header('Location: profile.php');
     // запись флеш-сообщений в сессию
     $_SESSION['messages'] = $messages;
 }
@@ -216,10 +235,9 @@ function checkEmail($pdo, $email, $currentUser) {
 }
 
 // вызов функции регистрации
-changeProfile($pdo, $email, $user);
-
-// переменная для вывода мини-сообщений под полями
-$errors = $_SESSION['messages']['errors'];
+if (isset($_POST['edit'])) {
+    changeProfile($pdo, $email, $user);
+}
 
 // если значение сессионой переменной image равно изображению по умолчанию, загружать его с одной папки
 if ($_SESSION['image'] == 'no-user.jpg') {
@@ -230,7 +248,6 @@ if ($_SESSION['image'] == 'no-user.jpg') {
 }
 
 // уничтожение сессий
-unset($_SESSION['messages']['errors']);
 unset($_SESSION['image']);
 
 ?>
@@ -314,7 +331,7 @@ unset($_SESSION['image']);
                                 <div class="row">
                                     <div class="col-md-8">
                                         <div class="form-group">
-                                            <label for="exampleFormControlInput1">Name</label>
+                                            <label for="exampleFormControlInput1">Имя</label>
                                             <input type="text" class="form-control <?php if (isset($errors['name'])): ?>is-invalid <?php endif; ?>" name="name" id="exampleFormControlInput1" value="<?= $name ?>">
                                             <?php if (isset($errors['name'])): ?> 
                                                 <span class="invalid-feedback" role="alert">
@@ -335,7 +352,12 @@ unset($_SESSION['image']);
 
                                         <div class="form-group">
                                             <label for="exampleFormControlInput3">Аватар</label>
-                                            <input type="file" class="form-control" name="image" id="exampleFormControlInput3">
+                                            <input type="file" class="form-control <?php if (isset($errors['format'])): ?>is-invalid <?php endif; ?>" name="image" id="exampleFormControlInput3">
+                                            <?php if (isset($errors['format'])): ?> 
+                                                <span class="invalid-feedback" role="alert">
+                                                    <strong><?= $errors['format']; ?></strong>
+                                                </span>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -343,7 +365,7 @@ unset($_SESSION['image']);
                                     </div>
 
                                     <div class="col-md-12">
-                                        <button type="submit" class="btn btn-warning">Edit profile</button>
+                                        <button type="submit" name="edit" class="btn btn-warning">Редактировать</button>
                                     </div>
                                 </div>
                             </form>
@@ -351,40 +373,59 @@ unset($_SESSION['image']);
                     </div>
                 </div>
 
-                <!-- <div class="col-md-12" style="margin-top: 20px;">
+                <div class="col-md-12" style="margin-top: 20px;">
                     <div class="card">
                         <div class="card-header"><h3>Безопасность</h3></div>
 
                         <div class="card-body">
-                            <div class="alert alert-success" role="alert">
-                                Пароль успешно обновлен
-                            </div>
+                            
 
-                            <form action="/profile/password" method="post">
+                            <form action="password.php" method="post">
                                 <div class="row">
                                     <div class="col-md-8">
                                         <div class="form-group">
-                                            <label for="exampleFormControlInput1">Current password</label>
-                                            <input type="password" name="current" class="form-control" id="exampleFormControlInput1">
+                                            <label for="exampleFormControlInput4">Текущий пароль</label>
+                                            <input type="password" name="current" class="form-control <?php if (isset($errors['current'])): ?> is-invalid <?php endif; ?>" id="exampleFormControlInput4">
+                                            <?php if (isset($errors['current'])): ?> 
+                                                <span class="invalid-feedback" role="alert">
+                                                    <strong><?= $errors['current']; ?></strong>
+                                                </span>
+                                            <?php endif; ?>
                                         </div>
 
                                         <div class="form-group">
-                                            <label for="exampleFormControlInput1">New password</label>
-                                            <input type="password" name="password" class="form-control" id="exampleFormControlInput1">
+                                            <label for="exampleFormControlInput5">Новый пароль</label>
+                                            <input type="password" name="password" class="form-control <?php if (isset($errors['password']) || isset($errors['password_equal'])): ?> is-invalid <?php endif; ?>" id="exampleFormControlInput5">
+                                            <?php if (isset($errors['password'])): ?> 
+                                                <span class="invalid-feedback" role="alert">
+                                                    <strong><?= $errors['password']; ?></strong>
+                                                </span>
+                                            <?php endif; ?>
+
+                                            <?php if (isset($errors['password_equal'])): ?> 
+                                                <span class="invalid-feedback" role="alert">
+                                                    <strong><?= $errors['password_equal']; ?></strong>
+                                                </span>
+                                            <?php endif; ?>
                                         </div>
 
                                         <div class="form-group">
-                                            <label for="exampleFormControlInput1">Password confirmation</label>
-                                            <input type="password" name="password_confirmation" class="form-control" id="exampleFormControlInput1">
+                                            <label for="exampleFormControlInput6">Новый пароль еще раз</label>
+                                            <input type="password" name="password_confirmation" class="form-control <?php if (isset($errors['password_confirm']) || isset($errors['password_equal'])): ?> is-invalid <?php endif; ?>" id="exampleFormControlInput6">
+                                            <?php if (isset($errors['password_confirm'])): ?> 
+                                                <span class="invalid-feedback" role="alert">
+                                                    <strong><?= $errors['password_confirm']; ?></strong>
+                                                </span>
+                                            <?php endif; ?>
                                         </div>
 
-                                        <button class="btn btn-success">Submit</button>
+                                        <button type="submit" class="btn btn-success">Сохранить</button>
                                     </div>
                                 </div>
                             </form>
                         </div>
                     </div>
-                </div> -->
+                </div>
             </div>
         </div>
         </main>

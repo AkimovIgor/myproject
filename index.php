@@ -41,7 +41,7 @@ if (!isset($_SESSION['user'])) {
  */
 function getAllComments($pdo) {
     // формируем sql-запрос
-    $sql = "SELECT cs.*, us.name 
+    $sql = "SELECT cs.*, us.name, us.image
             FROM comments AS cs 
             LEFT JOIN users AS us 
             ON cs.user_id = us.id 
@@ -179,7 +179,7 @@ $userId = checkUser($pdo, $email);
                                     <!-- Вывод данных каждого комментария -->
                                     <?php foreach ($comments as $comment): ?>
                                         <div class="media">
-                                            <img src="img/<?= $comment['image'] ?>" class="mr-3" alt="..." width="64" height="64">
+                                            <img src="<?= ($comment['image'] == 'no-user.jpg') ? 'img/' . $comment['image'] : 'uploads/' . $comment['image']?>" class="mr-3" alt="..." width="64" height="64">
                                             <div class="media-body">
                                                 <h5 class="mt-0"><?= $comment['name'] ?></h5> 
                                                 <span><small><?= prettyDate($comment['date']) ?></small></span>
